@@ -123,11 +123,10 @@ void ChangeSize(int w, int h)
         windowHeight = 100.0f;
         glOrtho(-windowWidth, windowWidth, -100.0, 100.0, -1000.0, 1000.0);
     }
-
     glMatrixMode(GL_MODELVIEW);
 }
 
-void SpecialKeys(int key, int x, int y)
+void HandleKey(unsigned char key, int x, int y)
 {
     GLfloat rotateStep = 5.0f;
     switch (key)
@@ -199,7 +198,7 @@ int main(int argc, char *argv[])
 
     glutDisplayFunc(RenderScene);
     glutReshapeFunc(ChangeSize);
-    glutSpecialFunc(SpecialKeys);
+    glutKeyboardFunc(HandleKey);
 
     SetupRC();
     glutMainLoop();
