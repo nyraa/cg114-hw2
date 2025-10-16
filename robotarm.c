@@ -18,14 +18,14 @@ static GLfloat windowHeight = 100.0f;
 
 uint32_t numTriangles[NUM_LINKS];
 struct Triangle *links[NUM_LINKS];
-GLfloat origins[NUM_LINKS][3] = {
+const GLfloat origins[NUM_LINKS][3] = {
     {0, -180, 0},
     {0, 20, 0},
     {0, 40, 0},
     {32.5, 120, 0},
     {0, 115, 0}
 };
-GLfloat linkColors[NUM_LINKS][3] = {
+const GLfloat linkColors[NUM_LINKS][3] = {
     {1.0f, 0.0f, 0.0f},
     {1.0f, 0.5f, 0.0f},
     {1.0f, 1.0f, 0.0f},
