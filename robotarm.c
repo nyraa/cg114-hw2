@@ -138,16 +138,16 @@ void HandleKey(unsigned char key, int x, int y)
             linkRotate[1] += rotateStep;
             break;
         case 'w': case 'W':
-            linkRotate[2] -= rotateStep;
-            break;
-        case 's': case 'S':
             linkRotate[2] += rotateStep;
             break;
+        case 's': case 'S':
+            linkRotate[2] -= rotateStep;
+            break;
         case 'e': case 'E':
-            linkRotate[3] -= rotateStep;
+            linkRotate[3] += rotateStep;
             break;
         case 'd': case 'D':
-            linkRotate[3] += rotateStep;
+            linkRotate[3] -= rotateStep;
             break;
         case 'r': case 'R':
             linkRotate[4] -= rotateStep;
