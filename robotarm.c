@@ -26,19 +26,20 @@ const GLfloat linkOrigins[NUM_LINKS][3] = {
     {0, 115, 0}
 };
 const GLfloat linkColors[NUM_LINKS][3] = {
-    {1.0f, 0.0f, 0.0f},
-    {1.0f, 0.5f, 0.0f},
-    {1.0f, 1.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f},
-    {0.0f, 1.0f, 1.0f}
+    {1.0f, 0.0f, 0.0f},     // link 0 red
+    {1.0f, 0.5f, 0.0f},     // link 1 orange
+    {1.0f, 1.0f, 0.0f},     // link 2 yellow
+    {0.0f, 1.0f, 0.0f},     // link 3 green
+    {0.0f, 1.0f, 1.0f}      // link 4 cyan
 };
 GLfloat linkRotate[NUM_LINKS] = {0};
 const GLfloat linkRotateAxis[NUM_LINKS][3] = {
-    {0, 0, 0},
-    {0, 1, 0},
-    {1, 0, 0},
-    {1, 0, 0},
-    {0, 1, 0}};
+    {0.0f, 0.0f, 0.0f},     // place holder
+    {0.0f, 1.0f, 0.0f},     // link 0-1 y axis
+    {1.0f, 0.0f, 0.0f},     // link 1-2 x axis
+    {1.0f, 0.0f, 0.0f},     // link 2-3 x axis
+    {0.0f, 1.0f, 0.0f}      // link 3-4 y axis
+};
 
 void RenderScene(void)
 {
