@@ -47,6 +47,8 @@ void RenderScene(void)
 
     glPushMatrix();
     glScalef(0.3f, 0.3f, 0.3f);
+    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);     // rotate x
+    glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);    // rotate y
     for (int i = 0; i < NUM_LINKS; ++i)
     {
         // draw link
