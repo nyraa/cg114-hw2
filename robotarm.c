@@ -10,9 +10,20 @@
 
 #include "readstl.h"
 
+#define LINKS_FILE_PREFIX "links/link"
+#define NUM_LINKS 5
+
 static GLfloat windowWidth  = 100.0f;  // world-coord half-width or height (depends on aspect)
 static GLfloat windowHeight = 100.0f;
 
+uint32_t numTriangles[NUM_LINKS];
+struct Triangle* links[NUM_LINKS];
+GLfloat origins[NUM_LINKS - 1][3] = {
+    {0, 20, 0},
+    {0, 40, 0},
+    {32.5, 120, 0},
+    {0, 115, 0}
+};
 
 void RenderScene(void)
 {
@@ -90,18 +101,31 @@ void SpecialKeys(int key, int x, int y)
     glutPostRedisplay();
 }
 
-void loadSTL(bool binary, const char* filename)
+void loadSTL()
 {
-
+    for (int i = 0; i < NUM_LINKS; ++i)
+    {
+        char filename[256];
+        snprintf(filename, sizeof(filename), "%s%d.stl", LINKS_FILE_PREFIX, i + 1);
+        numTriangles[i] = readBinSTL(filename, &links[i]);
+        printf("Loaded %s with %d triangles\n", filename, numTriangles[i]);
+    }
 }
 
 void Cleanup(void)
 {
-    
+    for (int i = 0; i < NUM_LINKS; ++i)
+    {
+        if (links[i] != NULL)
+        {
+            free(links[i]);
+        }
+    }
 }
 
 int main(int argc, char* argv[])
 {
+    loadSTL();
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
