@@ -18,7 +18,7 @@ static GLfloat windowHeight = 100.0f;
 
 uint32_t numTriangles[NUM_LINKS];
 struct Triangle *links[NUM_LINKS];
-const GLfloat origins[NUM_LINKS][3] = {
+const GLfloat linkOrigins[NUM_LINKS][3] = {
     {0, -180, 0},
     {0, 20, 0},
     {0, 40, 0},
@@ -51,7 +51,7 @@ void RenderScene(void)
     {
         // draw link
         glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
-        glTranslatef(origins[i][0], origins[i][1], origins[i][2]);
+        glTranslatef(linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
         glRotatef(linkRotate[i], linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
         glBegin(GL_TRIANGLES);
         for (uint32_t j = 0; j < numTriangles[i]; ++j)
