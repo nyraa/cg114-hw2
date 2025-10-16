@@ -19,7 +19,7 @@ static GLfloat windowHeight = 100.0f;
 uint32_t numTriangles[NUM_LINKS];
 struct Triangle *links[NUM_LINKS];
 GLfloat origins[NUM_LINKS][3] = {
-    {0, -10, 0},
+    {0, -180, 0},
     {0, 20, 0},
     {0, 40, 0},
     {32.5, 120, 0},
@@ -132,28 +132,28 @@ void HandleKey(unsigned char key, int x, int y)
     switch (key)
     {
         case 'q': case 'Q':
-            linkRotate[1] += rotateStep;
-            break;
-        case 'a': case 'A':
             linkRotate[1] -= rotateStep;
             break;
-        case 'w': case 'W':
-            linkRotate[2] += rotateStep;
+        case 'a': case 'A':
+            linkRotate[1] += rotateStep;
             break;
-        case 's': case 'S':
+        case 'w': case 'W':
             linkRotate[2] -= rotateStep;
             break;
-        case 'e': case 'E':
-            linkRotate[3] += rotateStep;
+        case 's': case 'S':
+            linkRotate[2] += rotateStep;
             break;
-        case 'd': case 'D':
+        case 'e': case 'E':
             linkRotate[3] -= rotateStep;
             break;
+        case 'd': case 'D':
+            linkRotate[3] += rotateStep;
+            break;
         case 'r': case 'R':
-            linkRotate[4] += rotateStep;
+            linkRotate[4] -= rotateStep;
             break;
         case 'f': case 'F':
-            linkRotate[4] -= rotateStep;
+            linkRotate[4] += rotateStep;
             break;
     }
     for (int i = 1; i < NUM_LINKS; ++i)
