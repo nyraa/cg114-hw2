@@ -17,7 +17,7 @@ static GLfloat windowWidth  = 100.0f;  // world-coord half-width or height (depe
 static GLfloat windowHeight = 100.0f;
 
 uint32_t numTriangles[NUM_LINKS];
-struct Triangle* links[NUM_LINKS];
+struct Triangle *links[NUM_LINKS];
 GLfloat origins[NUM_LINKS][3] = {
     {0, -10, 0},
     {0, 20, 0},
@@ -25,13 +25,20 @@ GLfloat origins[NUM_LINKS][3] = {
     {32.5, 120, 0},
     {0, 115, 0}
 };
-GLfloat linkColors [NUM_LINKS][3] = {
+GLfloat linkColors[NUM_LINKS][3] = {
     {1.0f, 0.0f, 0.0f},
     {1.0f, 0.5f, 0.0f},
     {1.0f, 1.0f, 0.0f},
     {0.0f, 1.0f, 0.0f},
     {0.0f, 1.0f, 1.0f}
 };
+GLfloat linkRotate[NUM_LINKS] = {0};
+const GLfloat linkRotateAxis[NUM_LINKS][3] = {
+    {0, 0, 0},
+    {0, 1, 0},
+    {1, 0, 0},
+    {1, 0, 0},
+    {0, 1, 0}};
 
 void RenderScene(void)
 {
@@ -45,6 +52,7 @@ void RenderScene(void)
         // draw link
         glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
         glTranslatef(origins[i][0], origins[i][1], origins[i][2]);
+        glRotatef(linkRotate[i], linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
         glBegin(GL_TRIANGLES);
         for (uint32_t j = 0; j < numTriangles[i]; ++j)
         {
@@ -117,11 +125,45 @@ void ChangeSize(int w, int h)
     }
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
 }
 
 void SpecialKeys(int key, int x, int y)
 {
+    GLfloat rotateStep = 5.0f;
+    switch (key)
+    {
+        case 'q': case 'Q':
+            linkRotate[1] += rotateStep;
+            break;
+        case 'a': case 'A':
+            linkRotate[1] -= rotateStep;
+            break;
+        case 'w': case 'W':
+            linkRotate[2] += rotateStep;
+            break;
+        case 's': case 'S':
+            linkRotate[2] -= rotateStep;
+            break;
+        case 'e': case 'E':
+            linkRotate[3] += rotateStep;
+            break;
+        case 'd': case 'D':
+            linkRotate[3] -= rotateStep;
+            break;
+        case 'r': case 'R':
+            linkRotate[4] += rotateStep;
+            break;
+        case 'f': case 'F':
+            linkRotate[4] -= rotateStep;
+            break;
+    }
+    for (int i = 1; i < NUM_LINKS; ++i)
+    {
+        if (linkRotate[i] >= 360)
+            linkRotate[i] -= 360;
+        else if (linkRotate[i] < 0)
+            linkRotate[i] += 360;
+    }
     glutPostRedisplay();
 }
 
@@ -147,7 +189,7 @@ void Cleanup(void)
     }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     loadSTL();
     glutInit(&argc, argv);
