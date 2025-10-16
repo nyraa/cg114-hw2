@@ -18,19 +18,43 @@ static GLfloat windowHeight = 100.0f;
 
 uint32_t numTriangles[NUM_LINKS];
 struct Triangle* links[NUM_LINKS];
-GLfloat origins[NUM_LINKS - 1][3] = {
+GLfloat origins[NUM_LINKS][3] = {
+    {0, -10, 0},
     {0, 20, 0},
     {0, 40, 0},
     {32.5, 120, 0},
     {0, 115, 0}
 };
+GLfloat linkColors [NUM_LINKS][3] = {
+    {1.0f, 0.0f, 0.0f},
+    {1.0f, 0.5f, 0.0f},
+    {1.0f, 1.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f},
+    {0.0f, 1.0f, 1.0f}
+};
 
 void RenderScene(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glShadeModel(GL_SMOOTH);
+    glMatrixMode(GL_MODELVIEW);
 
     glPushMatrix();
+    glScalef(0.3f, 0.3f, 0.3f);
+    for (int i = 0; i < NUM_LINKS; ++i)
+    {
+        // draw link
+        glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
+        glTranslatef(origins[i][0], origins[i][1], origins[i][2]);
+        glBegin(GL_TRIANGLES);
+        for (uint32_t j = 0; j < numTriangles[i]; ++j)
+        {
+            glNormal3fv(links[i][j].normal);
+            glVertex3fv(links[i][j].vertex1);
+            glVertex3fv(links[i][j].vertex2);
+            glVertex3fv(links[i][j].vertex3);
+        }
+        glEnd();
+    }
 
     glPopMatrix();
 
