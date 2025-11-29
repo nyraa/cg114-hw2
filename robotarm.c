@@ -41,6 +41,14 @@ const GLfloat linkRotateAxis[NUM_LINKS][3] = {
     {0.0f, 1.0f, 0.0f}      // link 3-4 y axis
 };
 
+GLfloat radius = 0.0f;
+GLfloat clawLength = 0.0f;
+
+float getVectorLength(const GLfloat v[3])
+{
+    return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+
 void RenderScene(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -50,6 +58,8 @@ void RenderScene(void)
     glScalef(0.3f, 0.3f, 0.3f);
     glRotatef(30.0f, 1.0f, 0.0f, 0.0f);     // rotate x
     glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);    // rotate y
+    // push matrix for arm rotation and base translation
+    glPushMatrix();
     for (int i = 0; i < NUM_LINKS; ++i)
     {
         // draw link
@@ -66,6 +76,24 @@ void RenderScene(void)
         }
         glEnd();
     }
+    // pop arm rotation and base translation
+    glPopMatrix();
+
+    // workspace sphere
+    // translate to first origin as sphere center
+    glTranslatef(linkOrigins[0][0], linkOrigins[0][1], linkOrigins[0][2]);
+
+    // disable lighting for the sphere
+    glDisable(GL_LIGHTING);
+
+    // enable blending for transparency
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.4f);
+
+    glutSolidSphere(radius, 30, 30);
+    glDisable(GL_BLEND);
+    glEnable(GL_LIGHTING);
 
     glPopMatrix();
 
@@ -79,7 +107,7 @@ void SetupRC(void)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
 
-    /* Lighting setup */
+    // lighting setup
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
@@ -93,11 +121,11 @@ void SetupRC(void)
     glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
-    /* Let glColor* calls set the material diffuse color */
+    // Let glColor* calls set the material diffuse color
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
-    /* Set default specular and shininess */
+    // Set default specular and shininess
     GLfloat matSpecular[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matSpecular);
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0f);
@@ -194,6 +222,29 @@ void Cleanup(void)
 int main(int argc, char *argv[])
 {
     loadSTL();
+    // calculate radius
+    // from root to claw origin
+    for (int i = 1; i < NUM_LINKS; ++i)
+    {
+        radius += getVectorLength(linkOrigins[i]);
+    }
+    // add claw length
+    // find claw length from STL data (link 4)
+    GLfloat maxY = -INFINITY;
+    GLfloat minY = INFINITY;
+    for (uint32_t j = 0; j < numTriangles[4]; ++j)
+    {
+        GLfloat v1y = links[4][j].vertex1[1];
+        GLfloat v2y = links[4][j].vertex2[1];
+        GLfloat v3y = links[4][j].vertex3[1];
+        GLfloat vMaxY = fmaxf(v1y, fmaxf(v2y, v3y));
+        GLfloat vMinY = fminf(v1y, fminf(v2y, v3y));
+        if (vMaxY > maxY) maxY = vMaxY;
+        if (vMinY < minY) minY = vMinY;
+    }
+    clawLength = maxY - minY;
+    radius += clawLength;
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
