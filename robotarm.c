@@ -7,6 +7,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
+#include "math3d.h"
 
 #include "readstl.h"
 
