@@ -123,34 +123,8 @@ void RenderScene(void)
     glPopMatrix();
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
-    // draw robot arm
-    DrawRobotArm(1);
 
-
-    // calculate claw segment transform matrix
-    M3DMatrix44f transformMatrix, currentMatrix, tempMatrix;
-    m3dLoadIdentity44(currentMatrix);
-    for (int i = 0; i < NUM_LINKS; ++i)
-    {
-        // transfer basePos
-        m3dTranslationMatrix44(transformMatrix, linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
-        m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
-        m3dRotationMatrix44(transformMatrix, m3dDegToRad(linkRotate[i]), linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
-        m3dMatrixMultiply44(currentMatrix, tempMatrix, transformMatrix);
-    }
-    
-    // calculate claw segment positions
-    M3DVector4f originPos = {0.0f, 0.0f, 0.0f, 1.0f}, clawPos;
-    m3dTransformVector4(clawPos, originPos, currentMatrix);
-    M3DVector4f clawEndPos;
-    m3dTranslationMatrix44(transformMatrix, 0.0f, clawLength, 0.0f);
-    m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
-    m3dTransformVector4(clawEndPos, originPos, tempMatrix);
-
-    // calculate distance from claw segment to sphere center
-    float distToSphere = getPointToSegmentDistance(sphereCenter, clawPos, clawEndPos);
-
-    // target sphere shadow
+    // draw target sphere shadow
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
     glPushMatrix();
@@ -162,7 +136,33 @@ void RenderScene(void)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
 
-    // target sphere
+    // draw robot arm
+    DrawRobotArm(1);
+
+    // calculate claw segment transform matrix
+    M3DMatrix44f transformMatrix, currentMatrix, tempMatrix;
+    m3dLoadIdentity44(currentMatrix);
+    for (int i = 0; i < NUM_LINKS; ++i)
+    {
+        m3dTranslationMatrix44(transformMatrix, linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
+        m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
+        m3dRotationMatrix44(transformMatrix, m3dDegToRad(linkRotate[i]), linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
+        m3dMatrixMultiply44(currentMatrix, tempMatrix, transformMatrix);
+    }
+    
+    // calculate claw segment positions
+    M3DVector4f originPos = {0.0f, 0.0f, 0.0f, 1.0f}, clawPos;
+    m3dTransformVector4(clawPos, originPos, currentMatrix);
+    // add claw length to get claw end position
+    M3DVector4f clawEndPos;
+    m3dTranslationMatrix44(transformMatrix, 0.0f, clawLength, 0.0f);
+    m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
+    m3dTransformVector4(clawEndPos, originPos, tempMatrix);
+
+    // calculate distance from claw segment to sphere center
+    float distToSphere = getPointToSegmentDistance(sphereCenter, clawPos, clawEndPos);
+
+    // draw target sphere
     glPushMatrix();
     glTranslatef(sphereCenter[0], sphereCenter[1], sphereCenter[2]);
     // switch color if claw touches sphere
@@ -185,7 +185,7 @@ void RenderScene(void)
     // glEnable(GL_DEPTH_TEST);
     // glEnable(GL_LIGHTING);
 
-    // workspace sphere
+    // draw workspace sphere
     // translate to first origin as sphere center
     glTranslatef(linkOrigins[0][0], linkOrigins[0][1], linkOrigins[0][2]);
 
