@@ -45,9 +45,26 @@ const GLfloat linkRotateAxis[NUM_LINKS][3] = {
 GLfloat radius = 0.0f;
 GLfloat clawLength = 0.0f;
 
-float getVectorLength(const GLfloat v[3])
+GLfloat sphereCenter[4] = {114.0f, -180.0f, 200.0f, 1.0f};
+GLfloat sphereRadius = 81.0f;
+
+float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GLfloat b[3])
 {
-    return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+    M3DVector3f ap, ab;
+    m3dSubtractVectors3(ap, p, a);
+    m3dSubtractVectors3(ab, b, a);
+    float abLengthSq = m3dGetVectorLength(ab);
+    abLengthSq *= abLengthSq;
+    float t = (m3dDotProduct(ap, ab)) / abLengthSq;
+    if (t < 0.0f) t = 0.0f;
+    else if (t > 1.0f) t = 1.0f;
+    M3DVector3f projection;
+    projection[0] = a[0] + t * ab[0];
+    projection[1] = a[1] + t * ab[1];
+    projection[2] = a[2] + t * ab[2];
+    M3DVector3f diff;
+    m3dSubtractVectors3(diff, p, projection);
+    return m3dGetVectorLength(diff);
 }
 
 void RenderScene(void)
@@ -61,12 +78,21 @@ void RenderScene(void)
     glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);    // rotate y
     // push matrix for arm rotation and base translation
     glPushMatrix();
+    M3DMatrix44f transformMatrix, currentMatrix, tempMatrix;
+    m3dLoadIdentity44(currentMatrix);
     for (int i = 0; i < NUM_LINKS; ++i)
     {
         // draw link
         glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
         glTranslatef(linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
         glRotatef(linkRotate[i], linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
+
+        // transfer basePos
+        m3dTranslationMatrix44(transformMatrix, linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
+        m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
+        m3dRotationMatrix44(transformMatrix, m3dDegToRad(linkRotate[i]), linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
+        m3dMatrixMultiply44(currentMatrix, tempMatrix, transformMatrix);
+
         glBegin(GL_TRIANGLES);
         for (uint32_t j = 0; j < numTriangles[i]; ++j)
         {
@@ -79,6 +105,40 @@ void RenderScene(void)
     }
     // pop arm rotation and base translation
     glPopMatrix();
+
+    // calculate claw segment positions
+    M3DVector4f originPos = {0.0f, 0.0f, 0.0f, 1.0f}, clawPos;
+    m3dTransformVector4(clawPos, originPos, currentMatrix);
+    M3DVector4f clawEndPos;
+    m3dTranslationMatrix44(transformMatrix, 0.0f, clawLength, 0.0f);
+    m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
+    m3dTransformVector4(clawEndPos, originPos, tempMatrix);
+
+    // calculate distance from claw segment to sphere center
+    float distToSphere = getPointToSegmentDistance(sphereCenter, clawPos, clawEndPos);
+
+    // target sphere
+    glPushMatrix();
+    glTranslatef(sphereCenter[0], sphereCenter[1], sphereCenter[2]);
+    // switch color if claw touches sphere
+    if (distToSphere <= sphereRadius)
+        glColor3ub(151, 160, 155);
+    else
+        glColor3ub(161, 113, 111);
+    glutSolidSphere(sphereRadius, 30, 30);
+    glPopMatrix();
+
+    // draw claw segment for debugging
+    // glDisable(GL_LIGHTING);
+    // glDisable(GL_DEPTH_TEST);
+    // glLineWidth(5.0f);
+    // glColor3f(1.0f, 1.0f, 1.0f);
+    // glBegin(GL_LINES);
+    // glVertex3f(clawPos[0], clawPos[1], clawPos[2]);
+    // glVertex3f(clawEndPos[0], clawEndPos[1], clawEndPos[2]);
+    // glEnd();
+    // glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_LIGHTING);
 
     // workspace sphere
     // translate to first origin as sphere center
@@ -227,7 +287,7 @@ int main(int argc, char *argv[])
     // from root to claw origin
     for (int i = 1; i < NUM_LINKS; ++i)
     {
-        radius += getVectorLength(linkOrigins[i]);
+        radius += m3dGetVectorLength(linkOrigins[i]);
     }
     // add claw length
     // find claw length from STL data (link 4)
@@ -245,6 +305,7 @@ int main(int argc, char *argv[])
     }
     clawLength = maxY - minY;
     radius += clawLength;
+    printf("Calculated workspace radius: %.2f\n", radius);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
