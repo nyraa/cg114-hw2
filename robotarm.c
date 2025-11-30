@@ -45,8 +45,15 @@ const GLfloat linkRotateAxis[NUM_LINKS][3] = {
 GLfloat radius = 0.0f;
 GLfloat clawLength = 0.0f;
 
-GLfloat sphereCenter[4] = {114.0f, -180.0f, 200.0f, 1.0f};
 GLfloat sphereRadius = 81.0f;
+GLfloat sphereCenter[4] = {-200.0f, -99.0f, 200.0f, 1.0f};
+
+M3DVector3f groundPoints[3] = {
+    { -30.0f, -180.0f, -20.0f },
+    {  -30.0f, -180.0f, 20.0f },
+    {    40.0f, -180.0f,  20.0f }
+};
+M3DMatrix44f shadowMatrix;
 
 float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GLfloat b[3])
 {
@@ -67,31 +74,19 @@ float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GL
     return m3dGetVectorLength(diff);
 }
 
-void RenderScene(void)
+void DrawRobotArm(int colorMode)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_MODELVIEW);
-
-    glPushMatrix();
-    glScalef(0.3f, 0.3f, 0.3f);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);     // rotate x
-    glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);    // rotate y
     // push matrix for arm rotation and base translation
     glPushMatrix();
-    M3DMatrix44f transformMatrix, currentMatrix, tempMatrix;
-    m3dLoadIdentity44(currentMatrix);
     for (int i = 0; i < NUM_LINKS; ++i)
     {
         // draw link
-        glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
+        if (colorMode)
+            glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
+        else
+            glColor3f(0.0f, 0.0f, 0.0f);
         glTranslatef(linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
         glRotatef(linkRotate[i], linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
-
-        // transfer basePos
-        m3dTranslationMatrix44(transformMatrix, linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
-        m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
-        m3dRotationMatrix44(transformMatrix, m3dDegToRad(linkRotate[i]), linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
-        m3dMatrixMultiply44(currentMatrix, tempMatrix, transformMatrix);
 
         glBegin(GL_TRIANGLES);
         for (uint32_t j = 0; j < numTriangles[i]; ++j)
@@ -105,7 +100,45 @@ void RenderScene(void)
     }
     // pop arm rotation and base translation
     glPopMatrix();
+}
 
+void RenderScene(void)
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
+
+    glPushMatrix();
+    #define SCALE 0.2f
+    glScalef(SCALE, SCALE, SCALE);
+    #undef SCALE
+    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);     // rotate x
+    glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);    // rotate y
+
+    // draw robot arm shadow
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    glPushMatrix();
+    glMultMatrixf((GLfloat *)shadowMatrix);
+    DrawRobotArm(0);
+    glPopMatrix();
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+    // draw robot arm
+    DrawRobotArm(1);
+
+
+    // calculate claw segment transform matrix
+    M3DMatrix44f transformMatrix, currentMatrix, tempMatrix;
+    m3dLoadIdentity44(currentMatrix);
+    for (int i = 0; i < NUM_LINKS; ++i)
+    {
+        // transfer basePos
+        m3dTranslationMatrix44(transformMatrix, linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
+        m3dMatrixMultiply44(tempMatrix, currentMatrix, transformMatrix);
+        m3dRotationMatrix44(transformMatrix, m3dDegToRad(linkRotate[i]), linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
+        m3dMatrixMultiply44(currentMatrix, tempMatrix, transformMatrix);
+    }
+    
     // calculate claw segment positions
     M3DVector4f originPos = {0.0f, 0.0f, 0.0f, 1.0f}, clawPos;
     m3dTransformVector4(clawPos, originPos, currentMatrix);
@@ -116,6 +149,18 @@ void RenderScene(void)
 
     // calculate distance from claw segment to sphere center
     float distToSphere = getPointToSegmentDistance(sphereCenter, clawPos, clawEndPos);
+
+    // target sphere shadow
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    glPushMatrix();
+    glMultMatrixf((GLfloat *)shadowMatrix);
+    glTranslatef(sphereCenter[0], sphereCenter[1], sphereCenter[2]);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glutSolidSphere(sphereRadius, 30, 30);
+    glPopMatrix();
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
 
     // target sphere
     glPushMatrix();
@@ -175,7 +220,7 @@ void SetupRC(void)
     GLfloat ambientLight[]  = { 0.2f, 0.2f, 0.2f, 1.0f };
     GLfloat diffuseLight[]  = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat specularLight[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    GLfloat lightPos[]      = { 100.0f, 100.0f, 100.0f, 1.0f }; // positional light
+    GLfloat lightPos[]      = { 400.0f, 400.0f, 200.0f, 0.0f }; // positional light
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
@@ -190,6 +235,11 @@ void SetupRC(void)
     GLfloat matSpecular[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matSpecular);
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0f);
+
+    // calculate shadow projection matrix
+    M3DVector4f planeEq;
+    m3dGetPlaneEquation(planeEq, groundPoints[0], groundPoints[1], groundPoints[2]);
+    m3dMakePlanarShadowMatrix(shadowMatrix, planeEq, lightPos);
 }
 
 void ChangeSize(int w, int h)
