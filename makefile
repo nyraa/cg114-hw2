@@ -6,8 +6,8 @@ LDFLAGS = -lGL -lGLU -lglut -lm -lGLEW
 CROSS_CC = x86_64-w64-mingw32-g++
 CROSS_INCLUDES = -I/usr/local/x86_64-w64-mingw32/include
 CROSS_LIBDIR = -L/usr/local/x86_64-w64-mingw32/lib
-CROSS_CFLAGS = -DFREEGLUT_STATIC
-CROSS_LDFLAGS = -Wl,-Bstatic -lfreeglut_static -Wl,-Bdynamic -lopengl32 -lglu32 -lgdi32 -luser32 -lkernel32 -lwinmm -static-libgcc -static-libstdc++
+CROSS_CFLAGS = -DFREEGLUT_STATIC -DGLEW_STATIC
+CROSS_LDFLAGS = -Wl,-Bstatic -lfreeglut_static -Wl,-Bdynamic -lopengl32 -lglu32 -lglew32 -lgdi32 -luser32 -lkernel32 -lwinmm -static-libgcc -static-libstdc++
 
 OBJ = robotarm.o readstl.o math3d.o gltools.o
 WIN_OBJ = robotarm_win.o readstl_win.o math3d_win.o gltools_win.o

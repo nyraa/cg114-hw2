@@ -8,7 +8,9 @@
  */
 
 #include "gltools.h"
+#if defined(__linux__)
 #include <GL/glx.h>
+#endif
 #include "math3d.h"
 #include <stdio.h>
 #include <assert.h>
