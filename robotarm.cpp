@@ -2,6 +2,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/freeglut.h>
+#include <GL/glew.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -71,6 +72,9 @@ enum DrawMode
 
 DrawMode currentDrawMode = Default;
 
+GLuint gVboLinks[NUM_LINKS];
+GLuint gVboNormals[NUM_LINKS];
+
 float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GLfloat b[3])
 {
     M3DVector3f ap, ab;
@@ -126,6 +130,7 @@ void DrawRobotArm(int colorMode)
                 glEnd();
                 break;
             case VertexArray:
+            case VBO:
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glEnableClientState(GL_NORMAL_ARRAY);
                 glVertexPointer(3, GL_FLOAT, 0, &links[i][0]);
@@ -134,28 +139,17 @@ void DrawRobotArm(int colorMode)
                 glDisableClientState(GL_VERTEX_ARRAY);
                 glDisableClientState(GL_NORMAL_ARRAY);
                 break;
-            case VBO:
-                {
-                    GLuint vboIDs[2];
-                    glGenBuffers(2, vboIDs);
-                    // vertex buffer
-                    glBindBuffer(GL_ARRAY_BUFFER, vboIDs[0]);
-                    glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(struct Triangle), links[i], GL_STATIC_DRAW);
-                    glEnableClientState(GL_VERTEX_ARRAY);
-                    glVertexPointer(3, GL_FLOAT, sizeof(struct Triangle), (GLvoid *)offsetof(struct Triangle, vertex1));
-                    // normal buffer
-                    glBindBuffer(GL_ARRAY_BUFFER, vboIDs[1]);
-                    glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(struct Triangle), links[i], GL_STATIC_DRAW);
-                    glEnableClientState(GL_NORMAL_ARRAY);
-                    glNormalPointer(GL_FLOAT, sizeof(struct Triangle), (GLvoid *)offsetof(struct Triangle, normal));
-                    // draw
-                    glDrawArrays(GL_TRIANGLES, 0, numTriangles[i] * 3);
-                    // cleanup
-                    glDisableClientState(GL_VERTEX_ARRAY);
-                    glDisableClientState(GL_NORMAL_ARRAY);
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-                    glDeleteBuffers(2, vboIDs);
-                }
+            // case VBO:
+                glEnableClientState(GL_VERTEX_ARRAY);
+                glBindBuffer(GL_ARRAY_BUFFER, gVboLinks[i]);
+                glVertexPointer(3, GL_FLOAT, 0, 0);
+                glEnableClientState(GL_NORMAL_ARRAY);
+                glBindBuffer(GL_ARRAY_BUFFER, gVboNormals[i]);
+                glNormalPointer(GL_FLOAT, 0, 0);
+                glDrawArrays(GL_TRIANGLES, 0, numTriangles[i] * 3);
+                glDisableClientState(GL_VERTEX_ARRAY);
+                glDisableClientState(GL_NORMAL_ARRAY);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
                 break;
         }
     }
@@ -293,10 +287,18 @@ void RenderScene(void)
         char cBuffer[64];
         
         fps = 100.0f / frameTimer.GetElapsedSeconds();
-        if(currentDrawMode == VertexArray)
-            sprintf(cBuffer,"Robot Arm with Vertex Array %.1f fps", fps);
-        else
-            sprintf(cBuffer,"Robot Arm with VBO %.1f fps", fps);
+        switch (currentDrawMode)
+        {
+            case Default:
+                sprintf(cBuffer,"Robot Arm with Default Rendering %.1f fps", fps);
+                break;
+            case VertexArray:
+                sprintf(cBuffer,"Robot Arm with Vertex Array %.1f fps", fps);
+                break;
+            case VBO:
+                sprintf(cBuffer,"Robot Arm with VBO %.1f fps", fps);
+                break;
+        }
             
         glutSetWindowTitle(cBuffer);
         
@@ -366,6 +368,21 @@ void SetupRC(void)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // vbo setup
+    // glGenBuffers will crash on my system for unknown reasons
+    // if (!glIsBuffer(gVboLinks[0]))
+    // {
+    //     glGenBuffers(NUM_LINKS, gVboLinks);
+    //     glGenBuffers(NUM_LINKS, gVboNormals);
+    // }
+    // for (int i = 0; i < NUM_LINKS; ++i)
+    // {
+    //     glBindBuffer(GL_ARRAY_BUFFER, gVboLinks[i]);
+    //     glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(float) * 9, links[i], GL_STATIC_DRAW);
+    //     glBindBuffer(GL_ARRAY_BUFFER, gVboNormals[i]);
+    //     glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(float) * 3, normals[i], GL_STATIC_DRAW);
+    // }
 }
 
 void TimerFunction(int value)
@@ -512,7 +529,7 @@ int main(int argc, char *argv[])
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     SetupRC();
-    glutTimerFunc(33, TimerFunction, 1);
+    glutTimerFunc(3, TimerFunction, 1);
     glutMainLoop();
     ShutdownRC();
     return 0;
