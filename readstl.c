@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-uint32_t readBinSTL(const char* filename, struct Triangle** triangles)
+uint32_t readBinSTL(const char* filename, float** triangles, float** normals)
 {
     FILE* file = fopen(filename, "rb");
     if (!file) {
@@ -17,8 +17,9 @@ uint32_t readBinSTL(const char* filename, struct Triangle** triangles)
     
     uint32_t numTriangles;
     fread(&numTriangles, sizeof(uint32_t), 1, file);
-    *triangles = (struct Triangle*)malloc(numTriangles * sizeof(struct Triangle));
-    if (!*triangles) {
+    *triangles = (float*)malloc(numTriangles * sizeof(float) * 9);
+    *normals = (float*)malloc(numTriangles * sizeof(float) * 3);
+    if (!*triangles || !*normals) {
         perror("Failed to allocate memory");
         fclose(file);
         return 0;
@@ -28,8 +29,10 @@ uint32_t readBinSTL(const char* filename, struct Triangle** triangles)
     for (uint32_t i = 0; i < numTriangles; i++)
     {
         fread(buffer, 50, 1, file);
-        struct Triangle* tri = &((*triangles)[i]);
-        *tri = *(struct Triangle*)buffer;
+        float* tri = &((*triangles)[i * 9]);
+        float* norm = &((*normals)[i * 3]);
+        memcpy(norm, buffer, 12);
+        memcpy(tri, buffer + 12, 36);
     }
     fclose(file);
     return numTriangles;

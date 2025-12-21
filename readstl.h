@@ -9,5 +9,5 @@ struct Triangle
     uint16_t attrByteCount;
 };
 
-uint32_t readBinSTL(const char* filename, struct Triangle** triangles);
+uint32_t readBinSTL(const char* filename, float** triangles, float** normals);
 uint32_t readAsciiSTL(const char* filename, struct Triangle** triangles);

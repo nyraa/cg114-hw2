@@ -20,7 +20,9 @@ static GLfloat windowWidth  = 100.0f;  // world-coord half-width or height (depe
 static GLfloat windowHeight = 100.0f;
 
 uint32_t numTriangles[NUM_LINKS];
-struct Triangle *links[NUM_LINKS];
+// struct Triangle *links[NUM_LINKS];
+float *links[NUM_LINKS];
+float *normals[NUM_LINKS];
 const GLfloat linkOrigins[NUM_LINKS][3] = {
     {0, -180, 0},
     {0, 20, 0},
@@ -62,11 +64,12 @@ GLuint textureIDs[NUM_TEXTURES];
 
 enum DrawMode
 {
+    Default,
     VertexArray,
     VBO
 };
 
-DrawMode currentDrawMode = VertexArray;
+DrawMode currentDrawMode = Default;
 
 float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GLfloat b[3])
 {
@@ -106,18 +109,55 @@ void DrawRobotArm(int colorMode)
         glRotatef(linkRotate[i], linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
 
         glBindTexture(GL_TEXTURE_2D, textureIDs[0]);
-        glBegin(GL_TRIANGLES);
-        for (uint32_t j = 0; j < numTriangles[i]; ++j)
+        switch(currentDrawMode)
         {
-            glNormal3fv(links[i][j].normal);
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex3fv(links[i][j].vertex1);
-            glTexCoord2f(1.0f, 0.0f);
-            glVertex3fv(links[i][j].vertex2);
-            glTexCoord2f(0.5f, 1.0f);
-            glVertex3fv(links[i][j].vertex3);
+            case Default:
+                glBegin(GL_TRIANGLES);
+                for (uint32_t j = 0; j < numTriangles[i]; ++j)
+                {
+                    glNormal3fv(&normals[i][j * 3]);
+                    glTexCoord2f(0.0f, 0.0f);
+                    glVertex3fv(&links[i][j * 9]);
+                    glTexCoord2f(1.0f, 0.0f);
+                    glVertex3fv(&links[i][j * 9 + 3]);
+                    glTexCoord2f(0.5f, 1.0f);
+                    glVertex3fv(&links[i][j * 9 + 6]);
+                }
+                glEnd();
+                break;
+            case VertexArray:
+                glEnableClientState(GL_VERTEX_ARRAY);
+                glEnableClientState(GL_NORMAL_ARRAY);
+                glVertexPointer(3, GL_FLOAT, 0, &links[i][0]);
+                glNormalPointer(GL_FLOAT, 0, &normals[i][0]);
+                glDrawArrays(GL_TRIANGLES, 0, numTriangles[i] * 3);
+                glDisableClientState(GL_VERTEX_ARRAY);
+                glDisableClientState(GL_NORMAL_ARRAY);
+                break;
+            case VBO:
+                {
+                    GLuint vboIDs[2];
+                    glGenBuffers(2, vboIDs);
+                    // vertex buffer
+                    glBindBuffer(GL_ARRAY_BUFFER, vboIDs[0]);
+                    glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(struct Triangle), links[i], GL_STATIC_DRAW);
+                    glEnableClientState(GL_VERTEX_ARRAY);
+                    glVertexPointer(3, GL_FLOAT, sizeof(struct Triangle), (GLvoid *)offsetof(struct Triangle, vertex1));
+                    // normal buffer
+                    glBindBuffer(GL_ARRAY_BUFFER, vboIDs[1]);
+                    glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(struct Triangle), links[i], GL_STATIC_DRAW);
+                    glEnableClientState(GL_NORMAL_ARRAY);
+                    glNormalPointer(GL_FLOAT, sizeof(struct Triangle), (GLvoid *)offsetof(struct Triangle, normal));
+                    // draw
+                    glDrawArrays(GL_TRIANGLES, 0, numTriangles[i] * 3);
+                    // cleanup
+                    glDisableClientState(GL_VERTEX_ARRAY);
+                    glDisableClientState(GL_NORMAL_ARRAY);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+                    glDeleteBuffers(2, vboIDs);
+                }
+                break;
         }
-        glEnd();
     }
     // pop arm rotation and base translation
     glPopMatrix();
@@ -412,7 +452,7 @@ void loadSTL()
     {
         char filename[256];
         snprintf(filename, sizeof(filename), "%s%d.stl", LINKS_FILE_PREFIX, i + 1);
-        numTriangles[i] = readBinSTL(filename, &links[i]);
+        numTriangles[i] = readBinSTL(filename, &links[i], &normals[i]);
         printf("Loaded %s with %d triangles\n", filename, numTriangles[i]);
     }
 }
@@ -444,9 +484,9 @@ int main(int argc, char *argv[])
     GLfloat minY = INFINITY;
     for (uint32_t j = 0; j < numTriangles[4]; ++j)
     {
-        GLfloat v1y = links[4][j].vertex1[1];
-        GLfloat v2y = links[4][j].vertex2[1];
-        GLfloat v3y = links[4][j].vertex3[1];
+        GLfloat v1y = links[4][j * 9 + 1];
+        GLfloat v2y = links[4][j * 9 + 4];
+        GLfloat v3y = links[4][j * 9 + 7];
         GLfloat vMaxY = fmaxf(v1y, fmaxf(v2y, v3y));
         GLfloat vMinY = fminf(v1y, fminf(v2y, v3y));
         if (vMaxY > maxY) maxY = vMaxY;
@@ -466,6 +506,7 @@ int main(int argc, char *argv[])
     glutKeyboardFunc(HandleKey);
 
     glutCreateMenu(ProcessMenu);
+    glutAddMenuEntry("Immediate Mode", Default);
     glutAddMenuEntry("Vertex Array", VertexArray);
     glutAddMenuEntry("VBO", VBO);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
