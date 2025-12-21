@@ -388,7 +388,7 @@ void SetupRC(void)
 void TimerFunction(int value)
 {
     glutPostRedisplay();
-    glutTimerFunc(3, TimerFunction, 1);
+    glutTimerFunc(1, TimerFunction, 1);
 }
 
 void ChangeSize(int w, int h)
@@ -529,7 +529,7 @@ int main(int argc, char *argv[])
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     SetupRC();
-    glutTimerFunc(3, TimerFunction, 1);
+    glutTimerFunc(1, TimerFunction, 1);
     glutMainLoop();
     ShutdownRC();
     return 0;
