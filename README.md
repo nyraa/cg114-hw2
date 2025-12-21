@@ -22,6 +22,13 @@
 >     - 顯示機械臂運動過程與球體的陰影(20%)
 > 2. 程式架構是否清楚、簡潔 (10%)
 
+# CG Assignment 4
+> 本次作業請同學實作以下：
+> 1. 以第三次作業為基礎增加下列要求
+>     - 對機械臂及圓球貼圖(60%)
+>     - 使用 Vertex array 及 VBO 分別繪製，並分別顯示 Frame Per Second(FPS)(30%)
+> 2. 程式架構是否清楚、簡潔 (10%)
+
 ## Compile Instructions
 ### Linux
 ```bash
