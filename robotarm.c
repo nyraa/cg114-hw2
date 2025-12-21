@@ -1,3 +1,4 @@
+#include "gltools.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/freeglut.h>
@@ -240,6 +241,10 @@ void SetupRC(void)
     M3DVector4f planeEq;
     m3dGetPlaneEquation(planeEq, groundPoints[0], groundPoints[1], groundPoints[2]);
     m3dMakePlanarShadowMatrix(shadowMatrix, planeEq, lightPos);
+
+    // read texture
+    glEnable(GL_TEXTURE_2D);
+
 }
 
 void ChangeSize(int w, int h)

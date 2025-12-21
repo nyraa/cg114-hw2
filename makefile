@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall
-LDFLAGS = -lGL -lGLU -lglut -lm
+LDFLAGS = -lGL -lGLU -lglut -lm -lGLEW
 
 # Cross-compile (MinGW) settings for Windows .exe
 CROSS_CC = x86_64-w64-mingw32-g++
@@ -9,8 +9,8 @@ CROSS_LIBDIR = -L/usr/local/x86_64-w64-mingw32/lib
 CROSS_CFLAGS = -DFREEGLUT_STATIC
 CROSS_LDFLAGS = -Wl,-Bstatic -lfreeglut_static -Wl,-Bdynamic -lopengl32 -lglu32 -lgdi32 -luser32 -lkernel32 -lwinmm -static-libgcc -static-libstdc++
 
-OBJ = robotarm.o readstl.o math3d.o
-WIN_OBJ = robotarm_win.o readstl_win.o math3d_win.o
+OBJ = robotarm.o readstl.o math3d.o gltools.o
+WIN_OBJ = robotarm_win.o readstl_win.o math3d_win.o gltools_win.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
