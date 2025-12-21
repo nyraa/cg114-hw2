@@ -56,6 +56,9 @@ M3DVector3f groundPoints[3] = {
 };
 M3DMatrix44f shadowMatrix;
 
+#define NUM_TEXTURES 2
+GLuint textureIDs[NUM_TEXTURES];
+
 float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GLfloat b[3])
 {
     M3DVector3f ap, ab;
@@ -83,18 +86,26 @@ void DrawRobotArm(int colorMode)
     {
         // draw link
         if (colorMode)
+        {
             glColor3f(linkColors[i][0], linkColors[i][1], linkColors[i][2]);
+        }
         else
+        {
             glColor3f(0.0f, 0.0f, 0.0f);
+        }
         glTranslatef(linkOrigins[i][0], linkOrigins[i][1], linkOrigins[i][2]);
         glRotatef(linkRotate[i], linkRotateAxis[i][0], linkRotateAxis[i][1], linkRotateAxis[i][2]);
 
+        glBindTexture(GL_TEXTURE_2D, textureIDs[0]);
         glBegin(GL_TRIANGLES);
         for (uint32_t j = 0; j < numTriangles[i]; ++j)
         {
             glNormal3fv(links[i][j].normal);
+            glTexCoord2f(0.0f, 0.0f);
             glVertex3fv(links[i][j].vertex1);
+            glTexCoord2f(1.0f, 0.0f);
             glVertex3fv(links[i][j].vertex2);
+            glTexCoord2f(0.5f, 1.0f);
             glVertex3fv(links[i][j].vertex3);
         }
         glEnd();
@@ -118,16 +129,19 @@ void RenderScene(void)
     // draw robot arm shadow
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_TEXTURE_2D);
     glPushMatrix();
     glMultMatrixf((GLfloat *)shadowMatrix);
     DrawRobotArm(0);
     glPopMatrix();
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
 
     // draw target sphere shadow
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_TEXTURE_2D);
     glPushMatrix();
     glMultMatrixf((GLfloat *)shadowMatrix);
     glTranslatef(sphereCenter[0], sphereCenter[1], sphereCenter[2]);
@@ -136,8 +150,10 @@ void RenderScene(void)
     glPopMatrix();
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
 
     // draw robot arm
+    glBindTexture(GL_TEXTURE_2D, textureIDs[0]);
     DrawRobotArm(1);
 
     // calculate claw segment transform matrix
@@ -168,10 +184,18 @@ void RenderScene(void)
     glTranslatef(sphereCenter[0], sphereCenter[1], sphereCenter[2]);
     // switch color if claw touches sphere
     if (distToSphere <= sphereRadius)
+    {
         glColor3ub(151, 160, 155);
+        glBindTexture(GL_TEXTURE_2D, textureIDs[1]);
+    }
     else
+    {
         glColor3ub(161, 113, 111);
-    glutSolidSphere(sphereRadius, 30, 30);
+        glBindTexture(GL_TEXTURE_2D, textureIDs[0]);
+    }
+
+    // glutSolidSphere(sphereRadius, 30, 30);
+    gltDrawSphere(sphereRadius, 30, 30);
     glPopMatrix();
 
     // draw claw segment for debugging
@@ -192,15 +216,18 @@ void RenderScene(void)
 
     // disable lighting for the sphere
     glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
 
     // enable blending for transparency
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glColor4f(1.0f, 1.0f, 1.0f, 0.4f);
 
-    glutSolidSphere(radius, 30, 30);
+    // glutSolidSphere(radius, 30, 30);
+    gltDrawSphere(radius, 30, 30);
     glDisable(GL_BLEND);
     glEnable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
 
     glPopMatrix();
 
@@ -213,6 +240,8 @@ void SetupRC(void)
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
+    glFrontFace(GL_CCW);
+    glEnable(GL_CULL_FACE);
 
     // lighting setup
     glEnable(GL_LIGHTING);
@@ -243,8 +272,29 @@ void SetupRC(void)
     m3dMakePlanarShadowMatrix(shadowMatrix, planeEq, lightPos);
 
     // read texture
-    glEnable(GL_TEXTURE_2D);
+    glGenTextures(NUM_TEXTURES, textureIDs);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
+    GLbyte *pBytes;
+    GLint iWidth, iHeight, iComponents;
+    GLenum eFormat;
+
+    glBindTexture(GL_TEXTURE_2D, textureIDs[0]);
+    pBytes = gltLoadTGA("brick.tga", &iWidth, &iHeight, &iComponents, &eFormat);
+    glTexImage2D(GL_TEXTURE_2D, 0, iComponents, iWidth, iHeight, 0, eFormat, GL_UNSIGNED_BYTE, pBytes);
+    free(pBytes);
+
+    // glBindTexture(GL_TEXTURE_2D, textureIDs[1]);
+    // pBytes = gltLoadTGA("grass.tga", &iWidth, &iHeight, &iComponents, &eFormat);
+    // glTexImage2D(GL_TEXTURE_2D, 0, iComponents, iWidth, iHeight, 0, eFormat, GL_UNSIGNED_BYTE, pBytes);
+    // free(pBytes);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glEnable(GL_TEXTURE_GEN_S);
+    // glEnable(GL_TEXTURE_GEN_T);
 }
 
 void ChangeSize(int w, int h)
@@ -324,8 +374,9 @@ void loadSTL()
     }
 }
 
-void Cleanup(void)
+void ShutdownRC(void)
 {
+    glDeleteTextures(NUM_TEXTURES, textureIDs);
     for (int i = 0; i < NUM_LINKS; ++i)
     {
         if (links[i] != NULL)
@@ -373,6 +424,6 @@ int main(int argc, char *argv[])
 
     SetupRC();
     glutMainLoop();
-    Cleanup();
+    ShutdownRC();
     return 0;
 }
