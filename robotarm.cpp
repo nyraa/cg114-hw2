@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "math3d.h"
+#include "stopwatch.hpp"
 
 #include "readstl.h"
 
@@ -58,6 +59,14 @@ M3DMatrix44f shadowMatrix;
 
 #define NUM_TEXTURES 2
 GLuint textureIDs[NUM_TEXTURES];
+
+enum DrawMode
+{
+    VertexArray,
+    VBO
+};
+
+DrawMode currentDrawMode = VertexArray;
 
 float getPointToSegmentDistance(const GLfloat p[3], const GLfloat a[3], const GLfloat b[3])
 {
@@ -116,6 +125,8 @@ void DrawRobotArm(int colorMode)
 
 void RenderScene(void)
 {
+    static int iFrames = 0;
+    static CStopWatch frameTimer;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
 
@@ -232,6 +243,27 @@ void RenderScene(void)
     glPopMatrix();
 
     glutSwapBuffers();
+
+    iFrames++;
+
+    // Do periodic frame rate calculation
+    if(iFrames == 100)
+    {
+        float fps;
+        char cBuffer[64];
+        
+        fps = 100.0f / frameTimer.GetElapsedSeconds();
+        if(currentDrawMode == VertexArray)
+            sprintf(cBuffer,"Robot Arm with Vertex Array %.1f fps", fps);
+        else
+            sprintf(cBuffer,"Robot Arm with VBO %.1f fps", fps);
+            
+        glutSetWindowTitle(cBuffer);
+        
+        frameTimer.Reset();
+        iFrames = 0;
+    }
+
 }
 
 void SetupRC(void)
@@ -294,6 +326,12 @@ void SetupRC(void)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void TimerFunction(int value)
+{
+    glutPostRedisplay();
+    glutTimerFunc(3, TimerFunction, 1);
 }
 
 void ChangeSize(int w, int h)
@@ -362,6 +400,12 @@ void HandleKey(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
+void ProcessMenu(int value)
+{
+    currentDrawMode = (DrawMode)value;
+    glutPostRedisplay();
+}
+
 void loadSTL()
 {
     for (int i = 0; i < NUM_LINKS; ++i)
@@ -421,7 +465,13 @@ int main(int argc, char *argv[])
     glutReshapeFunc(ChangeSize);
     glutKeyboardFunc(HandleKey);
 
+    glutCreateMenu(ProcessMenu);
+    glutAddMenuEntry("Vertex Array", VertexArray);
+    glutAddMenuEntry("VBO", VBO);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
     SetupRC();
+    glutTimerFunc(33, TimerFunction, 1);
     glutMainLoop();
     ShutdownRC();
     return 0;
