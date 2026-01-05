@@ -130,7 +130,6 @@ void DrawRobotArm(int colorMode)
                 glEnd();
                 break;
             case VertexArray:
-            case VBO:
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glEnableClientState(GL_NORMAL_ARRAY);
                 glVertexPointer(3, GL_FLOAT, 0, &links[i][0]);
@@ -139,7 +138,7 @@ void DrawRobotArm(int colorMode)
                 glDisableClientState(GL_VERTEX_ARRAY);
                 glDisableClientState(GL_NORMAL_ARRAY);
                 break;
-            // case VBO:
+            case VBO:
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glBindBuffer(GL_ARRAY_BUFFER, gVboLinks[i]);
                 glVertexPointer(3, GL_FLOAT, 0, 0);
@@ -310,6 +309,7 @@ void RenderScene(void)
 
 void SetupRC(void)
 {
+    glewInit();
     // Clear color: blue
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glEnable(GL_DEPTH_TEST);
@@ -370,19 +370,18 @@ void SetupRC(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // vbo setup
-    // glGenBuffers will crash on my system for unknown reasons
-    // if (!glIsBuffer(gVboLinks[0]))
-    // {
-    //     glGenBuffers(NUM_LINKS, gVboLinks);
-    //     glGenBuffers(NUM_LINKS, gVboNormals);
-    // }
-    // for (int i = 0; i < NUM_LINKS; ++i)
-    // {
-    //     glBindBuffer(GL_ARRAY_BUFFER, gVboLinks[i]);
-    //     glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(float) * 9, links[i], GL_STATIC_DRAW);
-    //     glBindBuffer(GL_ARRAY_BUFFER, gVboNormals[i]);
-    //     glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(float) * 3, normals[i], GL_STATIC_DRAW);
-    // }
+    if (!glIsBuffer(gVboLinks[0]))
+    {
+        glGenBuffers(NUM_LINKS, gVboLinks);
+        glGenBuffers(NUM_LINKS, gVboNormals);
+    }
+    for (int i = 0; i < NUM_LINKS; ++i)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, gVboLinks[i]);
+        glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(float) * 9, links[i], GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, gVboNormals[i]);
+        glBufferData(GL_ARRAY_BUFFER, numTriangles[i] * sizeof(float) * 3, normals[i], GL_STATIC_DRAW);
+    }
 }
 
 void TimerFunction(int value)
